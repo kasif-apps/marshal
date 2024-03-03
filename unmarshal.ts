@@ -61,19 +61,34 @@ function unmarshalSymbol(): symbol {
   return Symbol(textDecoder.decode(content));
 }
 
+export type Key = string | symbol | number;
+
 /**
  * Unmarshals a record, map or class instance key from the binary
  */
-function unmarshalKey(): string | symbol {
+function unmarshalKey(): Key {
+  const type = input![offset];
   offset++;
-  // Symbols are not common so the binary has a special flag if any exists.
-  // If no symbol exists, do not bother checking.
-  if (!config.symbolExists) {
-    return unmarshalString();
-  }
 
-  const type = input![offset - 1];
-  return type === constants.string ? unmarshalString() : unmarshalSymbol();
+  switch (type) {
+    case constants.string:
+      return unmarshalString();
+    case constants.symbol:
+      return unmarshalSymbol();
+    case constants.i8:
+    case constants.i16:
+    case constants.i32:
+    case constants.u8:
+    case constants.u16:
+    case constants.u32:
+      return unmarshalInteger();
+    case constants.f64:
+      return unmarshalNumber();
+    default:
+      throw new Error(
+        `Parse error: unknown key type ${type} at position ${offset}`
+      );
+  }
 }
 
 /**
@@ -190,7 +205,7 @@ function unmarshalRecord(): Record<string, unknown> {
   // record the start offset for circular reference checking.
   const startOffset = offset - 1;
   // if any key is a circular reference, this will be set to the key's name
-  const circular: Array<string | symbol> = [];
+  const circular: Key[] = [];
 
   const length = decodeSize();
   offset += 4;
@@ -243,7 +258,7 @@ function unmarshalRecord(): Record<string, unknown> {
  */
 function unmarshalMap(): Map<string, unknown> {
   const startOffset = offset - 1;
-  const circular: Array<string | symbol> = [];
+  const circular: Key[] = [];
 
   const length = decodeSize();
   offset += 4;
@@ -295,7 +310,7 @@ function unmarshalMap(): Map<string, unknown> {
  */
 function unmarshalClass(): Record<string, unknown> {
   const startOffset = offset;
-  const circular: Array<string | symbol> = [];
+  const circular: Key[] = [];
 
   const pointer = decodeSize();
   offset += 4;
@@ -430,7 +445,7 @@ function unmarshalConfig(): BinConfig {
  * const encoded = Marshal.encode({ a: 1, b: 2 });
  * const decoded = Marshal.decode(encoded);
  * console.log(decoded); // { a: 1, b: 2 }
- * 
+ *
  * const [encodedWithClasses, constructors] = Marshal.encodeWithClasses(new User());
  * const decodedWithClasses = Marshal.decode(encodedWithClasses, constructors);
  * console.log(decodedWithClasses); // User { name: "John", age: 30 }
@@ -438,7 +453,7 @@ function unmarshalConfig(): BinConfig {
  */
 export function decode<T>(
   value: Marshalled<T> | Uint8Array,
-  constructors_: Array<new (...args: unknown[]) => any> = [],
+  constructors_: Array<new (...args: unknown[]) => any> = []
 ): T {
   objects.clear();
   input = value as Uint8Array;
@@ -456,7 +471,7 @@ export function decode<T>(
  * @example
  * ```ts
  * import Marshal, { index } from "@kasif-apps/marshal"
- * 
+ *
  * const encoded = Marshal.encode({ a: 1, b: 2, [index]: "index" });
  * const decoded = Marshal.readFromIndex(encoded, "index");
  * console.log(decoded); // { a: 1, b: 2 }
@@ -465,7 +480,7 @@ export function decode<T>(
 export function readFromIndex<T>(
   value: Marshalled<any>,
   name: string,
-  constructors_: Array<new (...args: unknown[]) => any> = [],
+  constructors_: Array<new (...args: unknown[]) => any> = []
 ): T {
   objects.clear();
   input = value as Uint8Array;

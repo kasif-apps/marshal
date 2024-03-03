@@ -3,6 +3,7 @@
  */
 
 import { encodeNumber } from "./numbers.ts";
+import { Key } from "./unmarshal.ts";
 import {
   BinConfig,
   constants,
@@ -39,7 +40,7 @@ const config: BinConfig = {
   refExists: false,
 };
 
-const indecies = new Map<string, number>();
+const indecies = new Map<Key, number>();
 const memo = new Map<string, Uint8Array>();
 // oversized result buffer
 let buffer = new Uint8Array(2 ** 24);
@@ -173,7 +174,7 @@ function marshalSymbol(value: symbol): number {
   let n = write(constants.encoded.symbol);
   const r = textEncoder.encodeInto(
     value.description ?? "",
-    buffer.subarray(offset + 4),
+    buffer.subarray(offset + 4)
   );
   const length = encodeNumber.u32(r.written);
   n += write(length);
@@ -255,6 +256,36 @@ function marshalSet<T>(value: Set<T>): number {
 }
 
 /**
+ * Marshals an onject, map or a class instance key into the buffer, 
+ * returns the number of bytes written and if the object had an indexed key, the index value.
+ */
+function marshalKey(key: Key, value: any): [number, Key | null] {
+  let n = 0;
+  let indexed: Key | null = null;
+
+  switch (typeof key) {
+    case "string":
+      n += marshalString(key);
+      break;
+    case "number":
+      n += marshalNumber(key);
+      break;
+    case "symbol":
+      config.symbolExists = true;
+      if (key === index && typeof value === "string") {
+        indexed = key;
+      }
+
+      n += marshalSymbol(key);
+      break;
+    default:
+      throw new Error(`Cannot marshal key: '${typeof key}'`);
+  }
+
+  return [n, indexed];
+}
+
+/**
  * Marshals a record into the buffer, returns the number of bytes written.
  * The shape of this data is encoded as follows:
  * 8 bit integer to indicate the type of the data
@@ -262,7 +293,7 @@ function marshalSet<T>(value: Set<T>): number {
  * The content of the record (sequence of key-value pairs,
  * keys as symbols or strings and values as any other data type)
  */
-function marshalRecord(value: Record<string, unknown>): number {
+function marshalRecord(value: Record<Key, unknown>): number {
   const entries = getEntries(value);
   const recordOffset = offset;
 
@@ -281,22 +312,12 @@ function marshalRecord(value: Record<string, unknown>): number {
   let n = write(constants.encoded.record);
   n += write(encodeNumber.u32(entries.length));
 
-  let indexed: string | null = null;
+  let indexed: Key | null = null;
 
   for (let i = 0; i < entries.length; i++) {
-    const key = entries[i][0];
-
-    if (typeof key === "string") {
-      n += marshalString(key);
-    } else {
-      config.symbolExists = true;
-      if (key === index && typeof entries[i][1]) {
-        indexed = entries[i][1] as string;
-      }
-
-      n += marshalSymbol(key);
-    }
-
+    const [w, w_indexed] = marshalKey(entries[i][0], entries[i][1]);
+    n += w;
+    indexed = w_indexed;
     n += marshalDatum(entries[i][1]);
   }
 
@@ -315,8 +336,9 @@ function marshalRecord(value: Record<string, unknown>): number {
  * The content of the map (sequence of key-value pairs,
  * keys as symbols or strings and values as any other data type)
  */
-function marshalMap(value: Map<string, unknown>): number {
+function marshalMap(value: Map<Key, unknown>): number {
   const entries = Array.from(value.entries());
+  const mapOffset = offset;
 
   if (entries.length === 0) {
     return write(prebuilt.map);
@@ -333,17 +355,17 @@ function marshalMap(value: Map<string, unknown>): number {
   let n = write(constants.encoded.map);
   n += write(encodeNumber.u32(entries.length));
 
+  let indexed: Key | null = null;
+
   for (let i = 0; i < entries.length; i++) {
-    const key = entries[i][0];
-
-    if (typeof key === "string") {
-      n += marshalString(key);
-    } else {
-      config.symbolExists = true;
-      n += marshalSymbol(key);
-    }
-
+    const [w, w_indexed] = marshalKey(entries[i][0], entries[i][1]);
+    n += w;
+    indexed = w_indexed;
     n += marshalDatum(entries[i][1]);
+  }
+
+  if (indexed) {
+    indecies.set(indexed, mapOffset);
   }
 
   return n;
@@ -358,8 +380,9 @@ function marshalMap(value: Map<string, unknown>): number {
  * The content of the record (sequence of key-value pairs,
  * keys as symbols or strings and values as any other data type)
  */
-function marshalClass(value: Record<string, unknown>): number {
+function marshalClass(value: any): number {
   const entries = getEntries(value);
+  const instanceOffset = offset;
 
   // If the class instance is already in the buffer, write a reference to it
   const foundOffset = objects.get(value);
@@ -375,17 +398,17 @@ function marshalClass(value: Record<string, unknown>): number {
   n += write(encodeNumber.u32(pointer));
   n += write(encodeNumber.u32(entries.length));
 
+  let indexed: Key | null = null;
+
   for (let i = 0; i < entries.length; i++) {
-    const key = entries[i][0];
-
-    if (typeof key === "string") {
-      n += marshalString(key);
-    } else {
-      config.symbolExists = true;
-      n += marshalSymbol(key);
-    }
-
+    const [w, w_indexed] = marshalKey(entries[i][0], entries[i][1]);
+    n += w;
+    indexed = w_indexed;
     n += marshalDatum(entries[i][1]);
+  }
+
+  if (indexed) {
+    indecies.set(indexed, instanceOffset);
   }
 
   return n;
@@ -512,7 +535,7 @@ export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
  */
 export function encodeWithClasses<T>(
   value: T,
-  options?: EncodeOptions,
+  options?: EncodeOptions
 ): [Marshalled<T>, Array<new (...args: unknown[]) => any>] {
   offset = startOffset;
   config.bigEndian = false;

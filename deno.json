@@ -1,6 +1,7 @@
 {
   "tasks": {
     "docs": "deno doc --name=Marshal --output=docs --html ./mod.ts",
+    "bench": "deno bench --json --allow-hrtime > benchmarks/benchmarks.json",
     "coverage": "deno test --coverage=coverage && deno coverage --html",
     "build": "deno compile --allow-read --allow-write --output=dist/marshal bin.ts && deno task build-osx-apple && deno task build-osx-intel && deno task build-linux-arm && deno task build-linux-x86 && deno task build-windows && deno bundle ./mod.ts > dist/marshal.js",
     "build-osx-apple": "deno compile --target=aarch64-apple-darwin --allow-read --allow-write --output=dist/marshal_osx_apple bin.ts",

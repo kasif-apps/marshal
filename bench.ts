@@ -1,5 +1,5 @@
-import Marshal from "../mod.ts";
-import data from "./sample.json" with { type: "json" };
+import Marshal from "./mod.ts";
+import data from "./benchmarks/sample.json" with { type: "json" };
 
 Deno.bench("Marshal encoder", { group: "Encoding all" }, () => {
   Marshal.encode(data);

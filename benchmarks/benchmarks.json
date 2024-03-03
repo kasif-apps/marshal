@@ -1,0 +1,270 @@
+{
+  "runtime": "Deno/1.41.1 aarch64-apple-darwin",
+  "cpu": "Apple M2",
+  "benches": [
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Encoding all",
+      "name": "Marshal encoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 199,
+            "min": 2273209.0,
+            "max": 3497167.0,
+            "avg": 2657083.0,
+            "p75": 2991334.0,
+            "p99": 3311666.0,
+            "p995": 3497167.0,
+            "p999": 3497167.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Encoding all",
+      "name": "JSON encoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 664,
+            "min": 676208.0,
+            "max": 1208625.0,
+            "avg": 765086.0,
+            "p75": 788000.0,
+            "p99": 918584.0,
+            "p995": 937750.0,
+            "p999": 1208625.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Encoding",
+      "name": "Marshal encoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 20,
+            "min": 4977.3542,
+            "max": 5288.8416,
+            "avg": 5119.460010000001,
+            "p75": 5181.9625,
+            "p99": 5288.8416,
+            "p995": 5288.8416,
+            "p999": 5288.8416,
+            "highPrecision": false,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Encoding",
+      "name": "JSON encoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 41,
+            "min": 1603.075,
+            "max": 1686.3041,
+            "avg": 1640.431914634146,
+            "p75": 1648.225,
+            "p99": 1686.3041,
+            "p995": 1686.3041,
+            "p999": 1686.3041,
+            "highPrecision": false,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Decoding",
+      "name": "Marshal decoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 50,
+            "min": 9957042.0,
+            "max": 24518083.0,
+            "avg": 12857939.0,
+            "p75": 13643958.0,
+            "p99": 24518083.0,
+            "p995": 24518083.0,
+            "p999": 24518083.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Decoding",
+      "name": "JSON decoder",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 438,
+            "min": 1101708.0,
+            "max": 1523416.0,
+            "avg": 1168806.0,
+            "p75": 1177291.0,
+            "p99": 1430542.0,
+            "p995": 1440917.0,
+            "p999": 1523416.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning entry",
+      "name": "Marshal clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 17798,
+            "min": 19792.0,
+            "max": 7742875.0,
+            "avg": 28107.0,
+            "p75": 24042.0,
+            "p99": 72292.0,
+            "p995": 102500.0,
+            "p999": 777250.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning entry",
+      "name": "JSON clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 24,
+            "min": 3775.4375,
+            "max": 3898.8916,
+            "avg": 3820.0204875,
+            "p75": 3831.9875,
+            "p99": 3898.8916,
+            "p995": 3898.8916,
+            "p999": 3898.8916,
+            "highPrecision": false,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning entry",
+      "name": "Structured clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 22,
+            "min": 4166.6334,
+            "max": 4480.1208,
+            "avg": 4363.1628909090905,
+            "p75": 4447.5834,
+            "p99": 4480.1208,
+            "p995": 4480.1208,
+            "p999": 4480.1208,
+            "highPrecision": false,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning all",
+      "name": "Marshal clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 43,
+            "min": 12848833.0,
+            "max": 23268917.0,
+            "avg": 15424324.0,
+            "p75": 16606250.0,
+            "p99": 23268917.0,
+            "p995": 23268917.0,
+            "p999": 23268917.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning all",
+      "name": "JSON clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 272,
+            "min": 1804083.0,
+            "max": 2485667.0,
+            "avg": 1913918.0,
+            "p75": 1932209.0,
+            "p99": 2249667.0,
+            "p995": 2285209.0,
+            "p999": 2485667.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/muhammedalican/Documents/projects/marshal/bench.ts",
+      "group": "Cloning all",
+      "name": "Structured clone",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 296,
+            "min": 1667167.0,
+            "max": 2739125.0,
+            "avg": 1752003.0,
+            "p75": 1757792.0,
+            "p99": 2003708.0,
+            "p995": 2078375.0,
+            "p999": 2739125.0,
+            "highPrecision": true,
+            "usedExplicitTimers": false
+          }
+        }
+      ]
+    }
+  ]
+}

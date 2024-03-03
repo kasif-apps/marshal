@@ -34,9 +34,14 @@ Use [jsr](https://jsr.io) to install this package.
 deno add @kasif-apps/marshal
 ```
 
-### Node/Bun/Browser
+### Node/Bun
 ```
 npx jsr add @kasif-apps/marshal
+```
+
+### Browser
+```html
+<script src=""></script>
 ```
 
 ## Usage

@@ -12,7 +12,8 @@
 .DS_Store
 
 # Distribution files
-dist/
+dist/*
+!dist/marshal.js
 
 # Coverage files
 coverage/

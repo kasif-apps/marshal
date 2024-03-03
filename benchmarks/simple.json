@@ -1,0 +1,43 @@
+{
+  "_id": "65df93f08a608421f8fa1ae7",
+  "index": 0,
+  "guid": "1f908b99-bcdc-4ba1-abe6-41bb94e6e254",
+  "isActive": true,
+  "balance": "$1,103.73",
+  "picture": "http://placehold.it/32x32",
+  "age": 28,
+  "eyeColor": "blue",
+  "name": "Caroline Workman",
+  "gender": "female",
+  "company": "ARTIQ",
+  "email": "carolineworkman@artiq.com",
+  "phone": "+1 (838) 495-2437",
+  "address": "121 Post Court, Hachita, North Dakota, 1793",
+  "about": "Nulla fugiat reprehenderit velit labore. Eu nostrud anim nostrud sint. Nisi dolor ullamco laborum eiusmod ad esse deserunt irure. Ad dolor eu occaecat do aliquip esse officia adipisicing id.\r\n",
+  "registered": "2014-11-01T10:55:53 -02:00",
+  "tags": [
+    "minim",
+    "do",
+    "consectetur",
+    "in",
+    "enim",
+    "minim",
+    "aliquip"
+  ],
+  "friends": [
+    {
+      "id": 0,
+      "name": "Sharon Nichols"
+    },
+    {
+      "id": 1,
+      "name": "Sanders Oliver"
+    },
+    {
+      "id": 2,
+      "name": "Mae Briggs"
+    }
+  ],
+  "greeting": "Hello, Caroline Workman! You have 5 unread messages.",
+  "favoriteFruit": "banana"
+}

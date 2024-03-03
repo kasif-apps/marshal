@@ -1,0 +1,20 @@
+{
+  "tasks": {
+    "docs": "deno doc --name=Marshal --output=docs --html ./mod.ts",
+    "coverage": "deno test --coverage=coverage && deno coverage --html",
+    "build": "deno compile --allow-read --allow-write --output=dist/marshal bin.ts && deno task build-osx-apple && deno task build-osx-intel && deno task build-linux-arm && deno task build-linux-x86 && deno task build-windows && deno bundle ./mod.ts > dist/marshal.js",
+    "build-osx-apple": "deno compile --target=aarch64-apple-darwin --allow-read --allow-write --output=dist/marshal_osx_apple bin.ts",
+    "build-osx-intel": "deno compile --target=x86_64-apple-darwin --allow-read --allow-write --output=dist/marshal_osx_intel bin.ts",
+    "build-linux-arm": "deno compile --target=aarch64-unknown-linux-gnu --allow-read --allow-write --output=dist/marshal_linux_arm bin.ts",
+    "build-linux-x86": "deno compile --target=x86_64-unknown-linux-gnu --allow-read --allow-write --output=dist/marshal_linux_x86 bin.ts",
+    "build-windows": "deno compile --target=x86_64-pc-windows-msvc --allow-read --allow-write --output=dist/marshal_windows bin.ts"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
+  },
+  "name": "@kasif-apps/marshal",
+  "version": "0.0.1",
+  "exports": "./mod.ts"
+}

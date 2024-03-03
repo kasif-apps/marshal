@@ -36,7 +36,8 @@ const textEncoder = new TextEncoder();
 const config: BinConfig = {
   version: "0.0.1",
   bigEndian: false,
-  symbolExists: false,
+  hasSymbolKeys: false,
+  hasNumberKeys: false,
   refExists: false,
 };
 
@@ -256,7 +257,7 @@ function marshalSet<T>(value: Set<T>): number {
 }
 
 /**
- * Marshals an onject, map or a class instance key into the buffer, 
+ * Marshals an onject, map or a class instance key into the buffer,
  * returns the number of bytes written and if the object had an indexed key, the index value.
  */
 function marshalKey(key: Key, value: any): [number, Key | null] {
@@ -268,10 +269,11 @@ function marshalKey(key: Key, value: any): [number, Key | null] {
       n += marshalString(key);
       break;
     case "number":
+      config.hasNumberKeys = true;
       n += marshalNumber(key);
       break;
     case "symbol":
-      config.symbolExists = true;
+      config.hasSymbolKeys = true;
       if (key === index && typeof value === "string") {
         indexed = key;
       }
@@ -294,7 +296,7 @@ function marshalKey(key: Key, value: any): [number, Key | null] {
  * keys as symbols or strings and values as any other data type)
  */
 function marshalRecord(value: Record<Key, unknown>): number {
-  const entries = getEntries(value);
+  const [entries, onlyStringKeys] = getEntries(value);
   const recordOffset = offset;
 
   if (entries.length === 0) {
@@ -315,6 +317,12 @@ function marshalRecord(value: Record<Key, unknown>): number {
   let indexed: Key | null = null;
 
   for (let i = 0; i < entries.length; i++) {
+    if (onlyStringKeys) {
+      n += marshalString(entries[i][0] as string);
+      n += marshalDatum(entries[i][1]);
+      continue;
+    }
+
     const [w, w_indexed] = marshalKey(entries[i][0], entries[i][1]);
     n += w;
     indexed = w_indexed;
@@ -381,7 +389,7 @@ function marshalMap(value: Map<Key, unknown>): number {
  * keys as symbols or strings and values as any other data type)
  */
 function marshalClass(value: any): number {
-  const entries = getEntries(value);
+  const [entries, onlyStringKeys] = getEntries(value);
   const instanceOffset = offset;
 
   // If the class instance is already in the buffer, write a reference to it
@@ -401,6 +409,12 @@ function marshalClass(value: any): number {
   let indexed: Key | null = null;
 
   for (let i = 0; i < entries.length; i++) {
+    if (onlyStringKeys) {
+      n += marshalString(entries[i][0] as string);
+      n += marshalDatum(entries[i][1]);
+      continue;
+    }
+
     const [w, w_indexed] = marshalKey(entries[i][0], entries[i][1]);
     n += w;
     indexed = w_indexed;
@@ -480,7 +494,8 @@ function marshalConfig(config: BinConfig): number {
   offset = 4;
   let n = marshalString(config.version);
   n += marshalBoolean(config.bigEndian);
-  n += marshalBoolean(config.symbolExists);
+  n += marshalBoolean(config.hasSymbolKeys);
+  n += marshalBoolean(config.hasNumberKeys);
   n += marshalBoolean(config.refExists);
   offset = oldOffset;
 
@@ -512,7 +527,8 @@ export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
   offset = startOffset;
   config.bigEndian = false;
   config.refExists = false;
-  config.symbolExists = false;
+  config.hasSymbolKeys = false;
+  config.hasNumberKeys = false;
   objects = new WeakMap();
 
   if (options?.bufferSize) {
@@ -540,7 +556,7 @@ export function encodeWithClasses<T>(
   offset = startOffset;
   config.bigEndian = false;
   config.refExists = false;
-  config.symbolExists = false;
+  config.hasSymbolKeys = false;
   constructors = [];
   indecies.clear();
   objects = new WeakMap();

@@ -3,6 +3,7 @@
  */
 
 import { encodeNumber } from "./numbers.ts";
+import { Key } from "./unmarshal.ts";
 
 export const constants = {
   string: 1,
@@ -75,17 +76,20 @@ export const constants = {
 } as const;
 
 export function getEntries<T extends Record<string, unknown> | object>(
-  object: T,
-): [string | symbol, unknown][] {
-  const result: [string | symbol, unknown][] = [];
+  object: T
+): [[Key, unknown][], boolean] {
+  const result: [Key, unknown][] = [];
+  let onlyStringKeys = true;
 
-  const enumarables: Array<string | symbol> = Object.getOwnPropertyNames(
-    object,
-  );
+  const enumarables: Array<string | symbol> =
+    Object.getOwnPropertyNames(object);
   const symbols = Object.getOwnPropertySymbols(object);
   const length = Math.max(enumarables.length, symbols.length);
 
   for (let i = 0; i < length; i++) {
+    if (typeof enumarables[i] !== "string") {
+      onlyStringKeys = false;
+    }
     const enumarable = enumarables[i];
 
     if (enumarable) {
@@ -98,16 +102,18 @@ export function getEntries<T extends Record<string, unknown> | object>(
 
     const symbol = symbols[i];
     if (symbol) {
+      onlyStringKeys = false;
       result.push([symbol, object[symbol as keyof T]]);
     }
   }
 
-  return result;
+  return [result, onlyStringKeys];
 }
 export type BinConfig = {
   version: string;
   bigEndian: boolean;
-  symbolExists: boolean;
+  hasSymbolKeys: boolean;
+  hasNumberKeys: boolean;
   refExists: boolean;
 };
 

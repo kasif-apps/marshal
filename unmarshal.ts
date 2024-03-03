@@ -10,14 +10,16 @@ import { BinConfig, constants, startOffset } from "./util.ts";
 const objects = new Map<number, unknown>();
 // there is a 50 byte offset for metadata
 let offset = startOffset;
-let input: Uint8Array | undefined;
 let config: BinConfig;
 let constructors: Array<new (...args: unknown[]) => any> = [];
+let input: Uint8Array | undefined;
 
 const textDecoder = new TextDecoder();
+const peekBuffer = new Uint8Array(2 ** 11);
 
 function peek(n: number, off = 0): Uint8Array {
-  return input!.slice(offset + off, offset + off + n);
+  peekBuffer.set(input!.subarray(offset + off, offset + off + n));
+  return peekBuffer.subarray(0, n);
 }
 
 function decodeSize(off = 0): number {
@@ -67,6 +69,11 @@ export type Key = string | symbol | number;
  * Unmarshals a record, map or class instance key from the binary
  */
 function unmarshalKey(): Key {
+  if (!config.hasSymbolKeys && !config.hasNumberKeys) {
+    offset++;
+    return unmarshalString();
+  }
+
   const type = input![offset];
   offset++;
 
@@ -431,35 +438,42 @@ function unmarshalConfig(): BinConfig {
   const version = unmarshalString();
   const bigEndian = input![offset] === constants.true;
   offset++;
-  const symbolExists = input![offset] === constants.true;
+  const hasSymbolKeys = input![offset] === constants.true;
+  offset++;
+  const hasNumberKeys = input![offset] === constants.true;
   offset++;
   const refExists = input![offset] === constants.true;
 
-  return { version, bigEndian, symbolExists, refExists };
+  return { version, bigEndian, hasSymbolKeys, hasNumberKeys, refExists };
 }
 
 /**
- * Decodes a binary value returned from `encode` or `encodeWithClasses` functions. It can also infer the encoded value's type. If the encoded value contains class instances, the `constructors` parameter must be provided, otherwise only the instance's properties will be returned as a plain JavaScript object.
+ * Decodes a binary value returned from `encode` or `encodeWithClasses` functions.
+ * It can also infer the encoded value's type. If the encoded value contains class instances,
+ * the `constructors` parameter must be provided, otherwise only the instance's
+ * properties will be returned as a plain JavaScript object.
  * @example
  * ```ts
- * const encoded = Marshal.encode({ a: 1, b: 2 });
- * const decoded = Marshal.decode(encoded);
+ * import { index, readFromIndex, encode } from "@kasif-apps/marshal"
+ *
+ * const encoded = encode({ a: 1, b: 2 });
+ * const decoded = decode(encoded);
  * console.log(decoded); // { a: 1, b: 2 }
  *
- * const [encodedWithClasses, constructors] = Marshal.encodeWithClasses(new User());
- * const decodedWithClasses = Marshal.decode(encodedWithClasses, constructors);
+ * const [encodedWithClasses, constructors] = encodeWithClasses(new User());
+ * const decodedWithClasses = decode(encodedWithClasses, constructors);
  * console.log(decodedWithClasses); // User { name: "John", age: 30 }
  * ```
  */
 export function decode<T>(
   value: Marshalled<T> | Uint8Array,
-  constructors_: Array<new (...args: unknown[]) => any> = []
+  classes: Array<new (...args: unknown[]) => any> = []
 ): T {
   objects.clear();
   input = value as Uint8Array;
   config = unmarshalConfig();
   offset = startOffset;
-  constructors = constructors_;
+  constructors = classes;
   const unmarshalled = unmarshalDatum<T>();
   input = undefined;
   config = {} as BinConfig;
@@ -470,22 +484,22 @@ export function decode<T>(
  * Reads a value from a binary value returned from `encode` or `encodeWithClasses` functions by its index name. You can provide a property with special index key and a string type and retrieve it back faster. If the encoded value contains class instances, the `constructors` parameter must be provided, otherwise only the instance's properties will be returned as a plain JavaScript object.
  * @example
  * ```ts
- * import Marshal, { index } from "@kasif-apps/marshal"
+ * import { index, readFromIndex, encode } from "@kasif-apps/marshal"
  *
- * const encoded = Marshal.encode({ a: 1, b: 2, [index]: "index" });
- * const decoded = Marshal.readFromIndex(encoded, "index");
+ * const encoded = encode({ a: 1, b: 2, [index]: "index" });
+ * const decoded = readFromIndex(encoded, "index");
  * console.log(decoded); // { a: 1, b: 2 }
  * ```
  */
 export function readFromIndex<T>(
   value: Marshalled<any>,
   name: string,
-  constructors_: Array<new (...args: unknown[]) => any> = []
+  classes: Array<new (...args: unknown[]) => any> = []
 ): T {
   objects.clear();
   input = value as Uint8Array;
   config = unmarshalConfig();
-  constructors = constructors_;
+  constructors = classes;
   // go back to start and decode the 32 bit integer, it has the indecies map offset
   offset = 0;
   offset = decodeSize();
@@ -498,6 +512,7 @@ export function readFromIndex<T>(
     throw new Error(`Index ${name} not found`);
   }
   offset = index;
+  input = undefined;
 
   const unmarshalled = unmarshalDatum<T>();
   return unmarshalled;

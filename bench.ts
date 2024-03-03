@@ -59,3 +59,20 @@ Deno.bench("JSON clone", { group: "Cloning all" }, () => {
 Deno.bench("Structured clone", { group: "Cloning all" }, () => {
   structuredClone(data);
 });
+
+class User {
+  id = crypto.randomUUID();
+  friends: User[] = [];
+
+  constructor(public name: string, public age: number) {}
+
+  bio(): string {
+    return `${this.name} is ${this.age} years old.`;
+  }
+}
+
+const user = new User("John Doe", 30);
+
+Deno.bench("Encode/Decode instance", () => {
+  Marshal.decode(...Marshal.encodeWithClasses(user));
+});

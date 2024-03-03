@@ -1,5 +1,7 @@
 # Marshal
 
+[See documentation](https://jsr.io/@kasif-apps/marshal)
+
 ## Introduction
 
 Marshal is a lightweight JavaScript library for efficient binary serialization and deserialization

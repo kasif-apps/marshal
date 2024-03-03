@@ -10,16 +10,14 @@ import { BinConfig, constants, startOffset } from "./util.ts";
 const objects = new Map<number, unknown>();
 // there is a 50 byte offset for metadata
 let offset = startOffset;
-let config: BinConfig;
+let config: BinConfig = {} as BinConfig;
 let constructors: Array<new (...args: unknown[]) => any> = [];
 let input: Uint8Array | undefined;
 
 const textDecoder = new TextDecoder();
-const peekBuffer = new Uint8Array(2 ** 11);
 
 function peek(n: number, off = 0): Uint8Array {
-  peekBuffer.set(input!.subarray(offset + off, offset + off + n));
-  return peekBuffer.subarray(0, n);
+  return input!.subarray(offset + off, offset + off + n);
 }
 
 function decodeSize(off = 0): number {
@@ -42,10 +40,8 @@ function unmarshalString(): string {
     return "";
   }
 
-  const content = peek(length);
+  const result = textDecoder.decode(input!.subarray(offset, offset + length));
   offset += length;
-
-  const result = textDecoder.decode(content);
 
   return result;
 }
@@ -69,7 +65,7 @@ export type Key = string | symbol | number;
  * Unmarshals a record, map or class instance key from the binary
  */
 function unmarshalKey(): Key {
-  if (!config.hasSymbolKeys && !config.hasNumberKeys) {
+  if (!config.hs && !config.hn) {
     offset++;
     return unmarshalString();
   }
@@ -227,7 +223,7 @@ function unmarshalRecord(): Record<string, unknown> {
     const key = unmarshalKey();
 
     // Circular references or any reference may not be common, the encoded binary has a special flag if any exists.
-    if (config.refExists) {
+    if (config.re) {
       const datumType = input![offset];
 
       if (datumType === constants.ref) {
@@ -279,7 +275,7 @@ function unmarshalMap(): Map<string, unknown> {
   for (let i = 0; i < length; i++) {
     const key = unmarshalKey();
 
-    if (config.refExists) {
+    if (config.re) {
       const datumType = input![offset];
 
       if (datumType === constants.ref) {
@@ -330,7 +326,7 @@ function unmarshalClass(): Record<string, unknown> {
   for (let i = 0; i < length; i++) {
     const key = unmarshalKey();
 
-    if (config.refExists) {
+    if (config.re) {
       const datumType = input![offset];
 
       if (datumType === constants.ref) {
@@ -434,17 +430,10 @@ function unmarshalDatum<T>(): T {
  * Unmarshals the configuration from the binary
  */
 function unmarshalConfig(): BinConfig {
+  // first 4 bytes has the 32 bit indecies pointer
   offset = 5; // we know it is a string, just parse it.
-  const version = unmarshalString();
-  const bigEndian = input![offset] === constants.true;
-  offset++;
-  const hasSymbolKeys = input![offset] === constants.true;
-  offset++;
-  const hasNumberKeys = input![offset] === constants.true;
-  offset++;
-  const refExists = input![offset] === constants.true;
-
-  return { version, bigEndian, hasSymbolKeys, hasNumberKeys, refExists };
+  const result = unmarshalRecord() as BinConfig
+  return result;
 }
 
 /**
@@ -502,8 +491,8 @@ export function readFromIndex<T>(
   constructors = classes;
   // go back to start and decode the 32 bit integer, it has the indecies map offset
   offset = 0;
-  offset = decodeSize();
   // move forward to the indecies map offset, skip type annotation
+  offset = decodeSize();
   offset++;
   const indecies = unmarshalMap() as Map<string, number>;
   const index = indecies.get(name)!;
@@ -512,8 +501,9 @@ export function readFromIndex<T>(
     throw new Error(`Index ${name} not found`);
   }
   offset = index;
-  input = undefined;
-
   const unmarshalled = unmarshalDatum<T>();
+  input = undefined;
+  config = {} as BinConfig;
+
   return unmarshalled;
 }

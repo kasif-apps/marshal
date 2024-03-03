@@ -4,47 +4,48 @@ import {
   assertInstanceOf,
   assertNotEquals,
 } from "https://deno.land/std@0.218.0/assert/mod.ts";
+import { startOffset } from "./util.ts";
 
 Deno.test("Marshal encoder", () => {
   let data: any = "Hello, World!";
   let encoded = Marshal.encode(data);
 
-  // 13 bytes of string content, 1 byte of string type, 4 bytes of string length, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 13 + 1 + 4 + 50 + 5);
+  // 13 bytes of string content, 1 byte of string type, 4 bytes of string length, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 13 + 1 + 4 + startOffset + 5);
   assertEquals(
-    encoded.slice(50, 68),
+    encoded.slice(startOffset, startOffset + 18),
     new Uint8Array([1, 13, 0, 0, 0, ...new TextEncoder().encode(data)])
   );
 
   data = true;
   encoded = Marshal.encode(data);
 
-  // 1 byte of boolean type, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 1 + 50 + 5);
-  assertEquals(encoded.slice(50, 51), new Uint8Array([12]));
+  // 1 byte of boolean type, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 1 + startOffset + 5);
+  assertEquals(encoded.slice(startOffset, startOffset + 1), new Uint8Array([12]));
 
   data = false;
   encoded = Marshal.encode(data);
 
-  // 1 byte of boolean type, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 1 + 50 + 5);
-  assertEquals(encoded.slice(50, 51), new Uint8Array([13]));
+  // 1 byte of boolean type, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 1 + startOffset + 5);
+  assertEquals(encoded.slice(startOffset, startOffset + 1), new Uint8Array([13]));
 
   data = [];
   encoded = Marshal.encode(data);
 
-  // 1 byte of array type, 4 bytes of array length, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 1 + 4 + 50 + 5);
-  assertEquals(encoded.slice(50, 55), new Uint8Array([16, 0, 0, 0, 0]));
+  // 1 byte of array type, 4 bytes of array length, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 1 + 4 + startOffset + 5);
+  assertEquals(encoded.slice(startOffset, startOffset + 5), new Uint8Array([16, 0, 0, 0, 0]));
 
-  data = new Set([1, 2, 3, 1]);
+  data = new Set([1, 2, 3, 1, 256]);
   encoded = Marshal.encode(data);
 
-  // 1 byte of set type, 4 bytes of set length, 6 bytes of content, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 1 + 4 + 6 + 50 + 5);
+  // 1 byte of set type, 7 bytes of set length, 6 bytes of content, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 1 + 7 + 6 + startOffset + 5);
   assertEquals(
-    encoded.slice(50, 61),
-    new Uint8Array([18, 3, 0, 0, 0, 2, 1, 2, 2, 2, 3])
+    encoded.slice(startOffset, startOffset + 14),
+    new Uint8Array([18, 4, 0, 0, 0, 2, 1, 2, 2, 2, 3, 3, 0, 1])
   );
 
   data = new Map([
@@ -53,10 +54,10 @@ Deno.test("Marshal encoder", () => {
   ]);
   encoded = Marshal.encode(data);
 
-  // 1 byte of map type, 4 bytes of map length, 8 bytes of content, 50 bytes of metadata and 5 bytes of index data
-  assertEquals(encoded.length, 1 + 4 + 8 + 50 + 5);
+  // 1 byte of map type, 4 bytes of map length, 8 bytes of content, 100 bytes of metadata and 5 bytes of index data
+  assertEquals(encoded.length, 1 + 4 + 8 + startOffset + 5);
   assertEquals(
-    encoded.slice(50, 63),
+    encoded.slice(startOffset, startOffset + 13),
     new Uint8Array([19, 2, 0, 0, 0, 2, 1, 2, 2, 2, 3, 2, 4])
   );
 });

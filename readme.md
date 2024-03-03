@@ -113,9 +113,9 @@ function clone<T>(data: T): T {
 
 Marshal does not have the best performance when it comes to serializing and deserializing data but for its feature set, ergonomics and use cases, I believe it is good enough. I have done my due diligence to improve the performance as much as I can and contributions that could improve the performance are welcome.
 
-Compared to `JSON.stringify`, `Marshal.encode` encodes data 2-3x slower. With small objects with 10-20 keys, encoding take microseconds. At that scale 2-3x slowness seems negligable to me.
+Compared to `JSON.stringify`, `Marshal.encode` encodes data 2-4x slower. With small objects with 10-20 keys, encoding take microseconds. At that scale 2-4x slowness seems negligable to me.
 
-Compared to `JSON.parse`, `Marshal.decode` decodes data 6-10x slower. Considering `JSON.parse` already is slower than you might think, marshal library becomes less negligable. 
+Compared to `JSON.parse`, `Marshal.decode` decodes data 3-5x slower. Considering `JSON.parse` already is slower than you might think, marshal library becomes less negligable. 
 
 Cloning data at small and large scale is 5-6x slower than both `JSON.parse(JSON.stringify(data))` and `structuredClone(data)`.
 

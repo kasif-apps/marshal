@@ -110,15 +110,24 @@ export function getEntries<T extends Record<string, unknown> | object>(
   return [result, onlyStringKeys];
 }
 export type BinConfig = {
-  version: string;
-  bigEndian: boolean;
-  hasSymbolKeys: boolean;
-  hasNumberKeys: boolean;
-  refExists: boolean;
+  /** Encoding version */
+  v: string;
+  /** Numeric encoding is big endian */
+  be: boolean;
+  /** Encoded objects has symbol keys */
+  hs: boolean;
+  /** Encoded objects has number keys */
+  hn: boolean;
+  /** Encoding uses dynamic numbers instead of all JS float64 */
+  dn: boolean;
+  /** All strings are only ASCII */
+  aa: boolean;
+  /** Encoding has other object references */
+  re: boolean;
 };
 
 // there is a 50 byte buffer for some metadata
-export const startOffset = 50;
+export const startOffset = 100;
 
 /** Unique symbol for creating indexed objects.
  * Provide this symbol as a string property to an object to want indexed.

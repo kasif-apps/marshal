@@ -28,23 +28,26 @@ const prebuilt = {
   array: new Uint8Array([...constants.encoded.array, ...encodeNumber.u32(0)]),
   set: new Uint8Array([...constants.encoded.set, ...encodeNumber.u32(0)]),
   string: new Uint8Array([...constants.encoded.string, ...encodeNumber.u32(0)]),
+  symbol: new Uint8Array([...constants.encoded.symbol, ...encodeNumber.u32(0)]),
 } as const;
 
 const textEncoder = new TextEncoder();
 
 // A config data is prepended to the binary for diagnostic and future compatibility purposes
-const config: BinConfig = {
-  version: "0.0.1",
-  bigEndian: false,
-  hasSymbolKeys: false,
-  hasNumberKeys: false,
-  refExists: false,
+let config: BinConfig = {
+  v: "0.0.1",
+  be: false,
+  hs: false,
+  hn: false,
+  dn: false,
+  aa: true,
+  re: false,
 };
 
 const indecies = new Map<Key, number>();
 const memo = new Map<string, Uint8Array>();
 // oversized result buffer
-let buffer = new Uint8Array(2 ** 24);
+let buffer = new Uint8Array(2 ** 25);
 let constructors: Array<new (...args: unknown[]) => any> = [];
 // This is a map of objects to their offsets in the buffer, helps with circular and other references
 let objects = new WeakMap<object, number>();
@@ -56,9 +59,13 @@ function write(data: Uint8Array): number {
   return data.length;
 }
 
+function isASCII(str: string): boolean {
+  return /^[\x00-\xFF]*$/.test(str);
+}
+
 /**
  * Marshals a string into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the string
  * The string content
@@ -74,12 +81,22 @@ function marshalString(value: string): number {
     return write(cached);
   }
 
+  // write type
   let n = write(constants.encoded.string);
+  // write content and leave space for length data
   const r = textEncoder.encodeInto(value, buffer.subarray(offset + 4));
   const length = encodeNumber.u32(r.written);
+  // offset has not moved yet, this is before the text content
   n += write(length);
+  // then move the offset to the end of the written content
   offset += r.written;
   n += r.written;
+
+  const isAllAscii = isASCII(value);
+
+  if (!isAllAscii) {
+    config.aa = false;
+  }
 
   memo.set(value, buffer.slice(offset - n, offset));
 
@@ -88,11 +105,15 @@ function marshalString(value: string): number {
 
 /**
  * Marshals a number into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 8, 16, 32 or 64 bit integer to indicate the value
  */
 function marshalNumber(value: number): number {
+  if (!config.dn) {
+    return write(constants.encoded.f64) + write(encodeNumber.f64(value));
+  }
+
   if (Number.isInteger(value)) {
     if (value >= 0) {
       if (value <= 255) {
@@ -128,7 +149,7 @@ function marshalNumber(value: number): number {
 
 /**
  * Marshals a bigint into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 64 bit integer to indicate the value
  */
@@ -138,7 +159,7 @@ function marshalBigint(value: bigint): number {
 
 /**
  * Marshals a boolean into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the literal value
  */
 function marshalBoolean(value: boolean): number {
@@ -151,7 +172,7 @@ function marshalBoolean(value: boolean): number {
 
 /**
  * Marshals a date into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 64 bit integer to indicate the value
  */
@@ -166,39 +187,52 @@ function marshalDate(value: Date): number {
 
 /**
  * Marshals a symbol into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the symbol
  * The symbol content
  */
-function marshalSymbol(value: symbol): number {
+function marshalSymbol(data: symbol): number {
+  const value = data.description ?? "";
+
+  if (value.length === 0) {
+    return write(prebuilt.symbol);
+  }
+
+  // write type
   let n = write(constants.encoded.symbol);
-  const r = textEncoder.encodeInto(
-    value.description ?? "",
-    buffer.subarray(offset + 4)
-  );
+  // write content and leave space for length data
+  const r = textEncoder.encodeInto(value, buffer.subarray(offset + 4));
   const length = encodeNumber.u32(r.written);
+  // offset has not moved yet, this is before the text content
   n += write(length);
+  // then move the offset to the end of the written content
   offset += r.written;
   n += r.written;
+
+  const isAllAscii = isASCII(value);
+
+  if (!isAllAscii) {
+    config.aa = false;
+  }
 
   return n;
 }
 
 /**
  * Marshals a reference into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the offset of the reference
  */
 function marshalRef(offset: number): number {
-  config.refExists = true;
+  config.re = true;
   return write(constants.encoded.ref) + write(encodeNumber.u32(offset));
 }
 
 /**
  * Marshals an array into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the array
  * The content of the array
@@ -228,7 +262,7 @@ function marshalArray<T>(value: T[]): number {
 
 /**
  * Marshals a set into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the set
  * The content of the set
@@ -257,7 +291,7 @@ function marshalSet<T>(value: Set<T>): number {
 }
 
 /**
- * Marshals an onject, map or a class instance key into the buffer,
+ * Marshals an object, map or a class instance key into the buffer,
  * returns the number of bytes written and if the object had an indexed key, the index value.
  */
 function marshalKey(key: Key, value: any): [number, Key | null] {
@@ -269,11 +303,11 @@ function marshalKey(key: Key, value: any): [number, Key | null] {
       n += marshalString(key);
       break;
     case "number":
-      config.hasNumberKeys = true;
+      config.hn = true;
       n += marshalNumber(key);
       break;
     case "symbol":
-      config.hasSymbolKeys = true;
+      config.hs = true;
       if (key === index && typeof value === "string") {
         indexed = key;
       }
@@ -289,11 +323,11 @@ function marshalKey(key: Key, value: any): [number, Key | null] {
 
 /**
  * Marshals a record into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the record
  * The content of the record (sequence of key-value pairs,
- * keys as symbols or strings and values as any other data type)
+ * keys as symbols, strings or numbers and values as any other data type)
  */
 function marshalRecord(value: Record<Key, unknown>): number {
   const [entries, onlyStringKeys] = getEntries(value);
@@ -338,7 +372,7 @@ function marshalRecord(value: Record<Key, unknown>): number {
 
 /**
  * Marshals a map into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the length of the map
  * The content of the map (sequence of key-value pairs,
@@ -381,12 +415,12 @@ function marshalMap(value: Map<Key, unknown>): number {
 
 /**
  * Marshals a class instance into the buffer, returns the number of bytes written.
- * The shape of this data is encoded as follows:
+ * Encoded data shape is as follows:
  * 8 bit integer to indicate the type of the data
  * 32 bit integer to indicate the pointer to the constructor
  * 32 bit integer to indicate the length of the record
  * The content of the record (sequence of key-value pairs,
- * keys as symbols or strings and values as any other data type)
+ * keys as symbols, strings or numbers and values as any other data type)
  */
 function marshalClass(value: any): number {
   const [entries, onlyStringKeys] = getEntries(value);
@@ -492,11 +526,7 @@ function marshalConfig(config: BinConfig): number {
   const oldOffset = offset;
   // There will be a 32 bit integer at the start of the buffer to indicate the starting offset of the indecies
   offset = 4;
-  let n = marshalString(config.version);
-  n += marshalBoolean(config.bigEndian);
-  n += marshalBoolean(config.hasSymbolKeys);
-  n += marshalBoolean(config.hasNumberKeys);
-  n += marshalBoolean(config.refExists);
+  const n = marshalRecord(config);
   offset = oldOffset;
 
   return n;
@@ -512,27 +542,40 @@ function marshalIndecies(): number {
   return marshalMap(indecies);
 }
 
+function reset() {
+  offset = startOffset;
+  config = {
+    v: config.v,
+    be: false,
+    re: false,
+    hs: false,
+    hn: false,
+    aa: true,
+    dn: false,
+  };
+  constructors = [];
+  indecies.clear();
+  objects = new WeakMap();
+}
+
 export type EncodeOptions = {
-  bufferSize: number;
+  buffer: Uint8Array;
 };
 
 /**
- * Encodes a value of any type into a binary buffer, returns the buffer. You can encode anything that can be JSON.stringify'd and additionaly symbols, classes, maps, sets, dates, typed arrays and circular references.
+ * Encodes a value of any type into a binary buffer, returns the buffer.
+ * You can encode anything that can be JSON.stringify'd and additionaly
+ * symbols, classes, maps, sets, dates, typed arrays and circular references.
  * @example
  * ```ts
  * const encoded = Marshal.encode(data);
  * ```
  */
 export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
-  offset = startOffset;
-  config.bigEndian = false;
-  config.refExists = false;
-  config.hasSymbolKeys = false;
-  config.hasNumberKeys = false;
-  objects = new WeakMap();
+  reset();
 
-  if (options?.bufferSize) {
-    buffer = new Uint8Array(options.bufferSize);
+  if (options?.buffer) {
+    buffer = options.buffer;
   }
 
   marshalDatum(value);
@@ -553,16 +596,10 @@ export function encodeWithClasses<T>(
   value: T,
   options?: EncodeOptions
 ): [Marshalled<T>, Array<new (...args: unknown[]) => any>] {
-  offset = startOffset;
-  config.bigEndian = false;
-  config.refExists = false;
-  config.hasSymbolKeys = false;
-  constructors = [];
-  indecies.clear();
-  objects = new WeakMap();
+  reset();
 
-  if (options?.bufferSize) {
-    buffer = new Uint8Array(options.bufferSize);
+  if (options?.buffer) {
+    buffer = options.buffer;
   }
 
   marshalDatum(value);

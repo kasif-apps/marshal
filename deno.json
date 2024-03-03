@@ -14,7 +14,9 @@
       "exclude": ["no-explicit-any"]
     }
   },
+  "exclude": ["benchmarks/**", "test/**", ".vscode/**"],
   "name": "@kasif-apps/marshal",
+  "description": "Lightweight JavaScript library for efficient binary serialization and deserialization.",
   "version": "0.0.1",
   "exports": "./mod.ts"
 }

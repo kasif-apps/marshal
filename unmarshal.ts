@@ -1,3 +1,7 @@
+/**
+ * ummarshal module contains functions for decoding values into binary buffers.
+ */
+
 import { Marshalled } from "./marshal.ts";
 import { decodeNumber } from "./numbers.ts";
 import { BinConfig, constants, startOffset } from "./util.ts";

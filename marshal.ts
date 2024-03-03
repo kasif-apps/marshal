@@ -1,3 +1,7 @@
+/**
+ * marshal module contains functions for encoding values into binary buffers.
+ */
+
 import { encodeNumber } from "./numbers.ts";
 import {
   BinConfig,
@@ -7,9 +11,10 @@ import {
   startOffset,
 } from "./util.ts";
 
+// @ts-ignore ignore ambient context initialization
 declare const data_type: unique symbol;
 
-// This helps decoder to know the type of the data
+/** Creates a type over a Uint8Array and annotates the encoded type for helping the decoder. */
 export type Marshalled<T> = Uint8Array & { readonly [data_type]: T };
 
 const prebuilt = {

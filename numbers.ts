@@ -1,3 +1,7 @@
+/**
+ * number module contains number encoding functions that are used internally.
+ */
+
 const memo: Record<string, Map<number | bigint, Uint8Array>> = {
   u16: new Map(),
   i16: new Map(),

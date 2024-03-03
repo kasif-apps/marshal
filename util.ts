@@ -1,3 +1,7 @@
+/**
+ * util module contains constants and functions that are used internally.
+ */
+
 import { encodeNumber } from "./numbers.ts";
 
 export const constants = {

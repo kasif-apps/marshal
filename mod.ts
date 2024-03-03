@@ -1,3 +1,7 @@
+/**
+ * main module contains exports to the library.
+ */
+
 import { encode, encodeWithClasses } from "./marshal.ts";
 import { decode, readFromIndex } from "./unmarshal.ts";
 

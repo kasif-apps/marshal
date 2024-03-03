@@ -480,6 +480,10 @@ export type EncodeOptions = {
 
 /**
  * Encodes a value of any type into a binary buffer, returns the buffer. You can encode anything that can be JSON.stringify'd and additionaly symbols, classes, maps, sets, dates, typed arrays and circular references.
+ * @example
+ * ```ts
+ * const encoded = Marshal.encode(data);
+ * ```
  */
 export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
   offset = startOffset;
@@ -501,6 +505,10 @@ export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
 
 /**
  * Encodes a value of any type into a binary buffer and returns the buffer and an array of constructors used in the encoding. You can pass the constructors array to the decoder to get your classes as instances of these constructors. You can encode anything that can be JSON.stringify'd and additionaly symbols, classes, maps, sets, dates, typed arrays and circular references.
+ * @example
+ * ```ts
+ * const [encoded, constructors] = Marshal.encodeWithClasses(data);
+ * ```
  */
 export function encodeWithClasses<T>(
   value: T,

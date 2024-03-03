@@ -425,6 +425,16 @@ function unmarshalConfig(): BinConfig {
 
 /**
  * Decodes a binary value returned from `encode` or `encodeWithClasses` functions. It can also infer the encoded value's type. If the encoded value contains class instances, the `constructors` parameter must be provided, otherwise only the instance's properties will be returned as a plain JavaScript object.
+ * @example
+ * ```ts
+ * const encoded = Marshal.encode({ a: 1, b: 2 });
+ * const decoded = Marshal.decode(encoded);
+ * console.log(decoded); // { a: 1, b: 2 }
+ * 
+ * const [encodedWithClasses, constructors] = Marshal.encodeWithClasses(new User());
+ * const decodedWithClasses = Marshal.decode(encodedWithClasses, constructors);
+ * console.log(decodedWithClasses); // User { name: "John", age: 30 }
+ * ```
  */
 export function decode<T>(
   value: Marshalled<T> | Uint8Array,
@@ -443,6 +453,14 @@ export function decode<T>(
 
 /**
  * Reads a value from a binary value returned from `encode` or `encodeWithClasses` functions by its index name. You can provide a property with special index key and a string type and retrieve it back faster. If the encoded value contains class instances, the `constructors` parameter must be provided, otherwise only the instance's properties will be returned as a plain JavaScript object.
+ * @example
+ * ```ts
+ * import Marshal, { index } from "@kasif-apps/marshal"
+ * 
+ * const encoded = Marshal.encode({ a: 1, b: 2, [index]: "index" });
+ * const decoded = Marshal.readFromIndex(encoded, "index");
+ * console.log(decoded); // { a: 1, b: 2 }
+ * ```
  */
 export function readFromIndex<T>(
   value: Marshalled<any>,

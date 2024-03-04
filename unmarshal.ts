@@ -206,7 +206,7 @@ function unmarshalSet<T>(): Set<T> {
  */
 function unmarshalRecord(): Record<string, unknown> {
   // record the start offset for circular reference checking.
-  const startOffset = offset - 1;
+  const recordOffset = offset - 1;
   // if any key is a circular reference, this will be set to the key's name
   const circular: Key[] = [];
 
@@ -231,7 +231,7 @@ function unmarshalRecord(): Record<string, unknown> {
         const refOffset = decodeSize();
         offset += 4;
 
-        if (startOffset === refOffset) {
+        if (recordOffset === refOffset) {
           circular.push(key);
         } else {
           content[key as string] = objects.get(refOffset);
@@ -251,7 +251,7 @@ function unmarshalRecord(): Record<string, unknown> {
     content[circular[i] as string] = content;
   }
 
-  objects.set(startOffset, content);
+  objects.set(recordOffset, content);
 
   return content;
 }
@@ -260,7 +260,7 @@ function unmarshalRecord(): Record<string, unknown> {
  * Unmarshals a map from the binary
  */
 function unmarshalMap(): Map<string, unknown> {
-  const startOffset = offset - 1;
+  const mapOffset = offset - 1;
   const circular: Key[] = [];
 
   const length = decodeSize();
@@ -280,10 +280,10 @@ function unmarshalMap(): Map<string, unknown> {
 
       if (datumType === constants.ref) {
         offset++;
-        const refOffset = decodeSize(2);
+        const refOffset = decodeSize();
         offset += 4;
 
-        if (startOffset == refOffset) {
+        if (mapOffset === refOffset) {
           circular.push(key);
         } else {
           content.set(key as string, objects.get(refOffset));
@@ -303,7 +303,7 @@ function unmarshalMap(): Map<string, unknown> {
     content.set(circular[i] as string, content);
   }
 
-  objects.set(startOffset, content);
+  objects.set(mapOffset, content);
 
   return content;
 }
@@ -312,7 +312,7 @@ function unmarshalMap(): Map<string, unknown> {
  * Unmarshals a class instance from the binary
  */
 function unmarshalClass(): Record<string, unknown> {
-  const startOffset = offset;
+  const classOffset = offset - 1;
   const circular: Key[] = [];
 
   const pointer = decodeSize();
@@ -328,13 +328,13 @@ function unmarshalClass(): Record<string, unknown> {
 
     if (config.re) {
       const datumType = input![offset];
-
+      
       if (datumType === constants.ref) {
         offset++;
-        const refOffset = decodeSize(2);
+        const refOffset = decodeSize();
         offset += 4;
-
-        if (startOffset == refOffset) {
+        
+        if (classOffset === refOffset) {
           circular.push(key);
         } else {
           content[key as string] = objects.get(refOffset);
@@ -349,12 +349,12 @@ function unmarshalClass(): Record<string, unknown> {
     }
   }
 
-  for (let i = 0; i < circular.length; i++) {
-    content[circular[i] as string] = content;
-  }
-
   if (constructors[pointer] === undefined) {
-    objects.set(startOffset, content);
+    for (let i = 0; i < circular.length; i++) {
+      content[circular[i] as string] = content;
+    }
+
+    objects.set(classOffset, content);
 
     return content;
   }
@@ -362,7 +362,11 @@ function unmarshalClass(): Record<string, unknown> {
   const instance = Object.create(constructors[pointer].prototype);
   Object.assign(instance, content);
 
-  objects.set(startOffset, instance);
+  for (let i = 0; i < circular.length; i++) {
+    instance[circular[i] as string] = instance;
+  }
+
+  objects.set(classOffset, instance);
 
   return instance;
 }

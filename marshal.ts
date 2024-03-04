@@ -542,7 +542,7 @@ function marshalIndecies(): number {
   return marshalMap(indecies);
 }
 
-function reset() {
+function reset(options?: EncodeOptions) {
   offset = startOffset;
   config = {
     v: config.v,
@@ -553,13 +553,19 @@ function reset() {
     aa: true,
     dn: false,
   };
+
+  if (options?.useDynamicNumbers) {
+    config.dn = true;
+  }
+
   constructors = [];
   indecies.clear();
   objects = new WeakMap();
 }
 
 export type EncodeOptions = {
-  buffer: Uint8Array;
+  buffer?: Uint8Array;
+  useDynamicNumbers?: boolean;
 };
 
 /**
@@ -572,7 +578,7 @@ export type EncodeOptions = {
  * ```
  */
 export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
-  reset();
+  reset(options);
 
   if (options?.buffer) {
     buffer = options.buffer;
@@ -596,7 +602,7 @@ export function encodeWithClasses<T>(
   value: T,
   options?: EncodeOptions
 ): [Marshalled<T>, Array<new (...args: unknown[]) => any>] {
-  reset();
+  reset(options);
 
   if (options?.buffer) {
     buffer = options.buffer;

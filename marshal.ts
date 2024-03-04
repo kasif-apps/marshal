@@ -44,7 +44,7 @@ let config: BinConfig = {
   re: false,
 };
 
-const indecies = new Map<Key, number>();
+const indecies = new Map<string, number>();
 const memo = new Map<string, Uint8Array>();
 // oversized result buffer
 let buffer = new Uint8Array(2 ** 25);
@@ -364,7 +364,7 @@ function marshalRecord(value: Record<Key, unknown>): number {
   }
 
   if (indexed) {
-    indecies.set(indexed, recordOffset);
+    indecies.set(value[indexed] as string, recordOffset);
   }
 
   return n;
@@ -407,7 +407,7 @@ function marshalMap(value: Map<Key, unknown>): number {
   }
 
   if (indexed) {
-    indecies.set(indexed, mapOffset);
+    indecies.set(value.get(indexed) as string, mapOffset);
   }
 
   return n;
@@ -456,7 +456,7 @@ function marshalClass(value: any): number {
   }
 
   if (indexed) {
-    indecies.set(indexed, instanceOffset);
+    indecies.set(value[indexed] as string, instanceOffset);
   }
 
   return n;
@@ -563,8 +563,20 @@ function reset(options?: EncodeOptions) {
   objects = new WeakMap();
 }
 
+/** Encoding options */
 export type EncodeOptions = {
+  /** Provide a custom buffer with a custom size. The default buffer 
+   * is sized at 2 ** 25 bytes, giving you roughly 30 mb. If it is 
+   * not enough or you want to decrease memory consumption, 
+   * you can provide a custom buffer.
+   */
   buffer?: Uint8Array;
+  /** Use dynamic numbers instead of all JS float64. 
+   * This will encode positive numbers less than 256 to u8
+   * and negative numbers greater than -128 to i8 and so on...
+   * If you have a lot of untyped numbers and you want 
+   * to shrink your end result, mark this 'true'. It has a
+   * small performance cost when enabled.  */
   useDynamicNumbers?: boolean;
 };
 

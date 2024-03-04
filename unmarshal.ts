@@ -17,7 +17,7 @@ let input: Uint8Array | undefined;
 const textDecoder = new TextDecoder();
 
 function peek(n: number, off = 0): Uint8Array {
-  return input!.subarray(offset + off, offset + off + n);
+  return input!.slice(offset + off, offset + off + n);
 }
 
 function decodeSize(off = 0): number {
@@ -53,10 +53,14 @@ function unmarshalSymbol(): symbol {
   const length = decodeSize();
   offset += 4;
 
-  const content = peek(length);
+  if (length === 0) {
+    return Symbol("");
+  }
+
+  const result = textDecoder.decode(input!.subarray(offset, offset + length));
   offset += length;
 
-  return Symbol(textDecoder.decode(content));
+  return Symbol(result);
 }
 
 export type Key = string | symbol | number;
@@ -328,12 +332,12 @@ function unmarshalClass(): Record<string, unknown> {
 
     if (config.re) {
       const datumType = input![offset];
-      
+
       if (datumType === constants.ref) {
         offset++;
         const refOffset = decodeSize();
         offset += 4;
-        
+
         if (classOffset === refOffset) {
           circular.push(key);
         } else {
@@ -400,7 +404,7 @@ function unmarshalDatum<T>(): T {
       return unmarshalInteger() as T;
     case constants.f64:
       return unmarshalNumber() as T;
-    case constants.u64:
+    case constants.i64:
       return unmarshalBigint() as T;
     case constants.true:
     case constants.false:
@@ -436,7 +440,7 @@ function unmarshalDatum<T>(): T {
 function unmarshalConfig(): BinConfig {
   // first 4 bytes has the 32 bit indecies pointer
   offset = 5; // we know it is a string, just parse it.
-  const result = unmarshalRecord() as BinConfig
+  const result = unmarshalRecord() as BinConfig;
   return result;
 }
 

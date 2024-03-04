@@ -1,8 +1,9 @@
-import Marshal from "./mod.ts";
+import Marshal, { index } from "./mod.ts";
 import {
   assertEquals,
   assertInstanceOf,
   assertNotEquals,
+  assertNotStrictEquals,
 } from "https://deno.land/std@0.218.0/assert/mod.ts";
 import { startOffset } from "./util.ts";
 
@@ -82,14 +83,14 @@ Deno.test("Marshal encoder", () => {
   );
 
   // Assert that there is no error
-  Marshal.encode(1, { useDynamicNumbers: false, buffer });
-  Marshal.encode(-1, { useDynamicNumbers: false, buffer });
-  Marshal.encode(300, { useDynamicNumbers: false, buffer });
-  Marshal.encode(-120, { useDynamicNumbers: false, buffer });
-  Marshal.encode(65540, { useDynamicNumbers: false, buffer });
-  Marshal.encode(-32760, { useDynamicNumbers: false, buffer });
-  Marshal.encode(4294967300, { useDynamicNumbers: false, buffer });
-  Marshal.encode(-2147483640, { useDynamicNumbers: false, buffer });
+  Marshal.encode(1, { useDynamicNumbers: true, buffer });
+  Marshal.encode(-1, { useDynamicNumbers: true, buffer });
+  Marshal.encode(300, { useDynamicNumbers: true, buffer });
+  Marshal.encode(-120, { useDynamicNumbers: true, buffer });
+  Marshal.encode(65540, { useDynamicNumbers: true, buffer });
+  Marshal.encode(-32760, { useDynamicNumbers: true, buffer });
+  Marshal.encode(4294967290, { useDynamicNumbers: true, buffer });
+  Marshal.encode(-2147483640, { useDynamicNumbers: true, buffer });
 
   data = new Map();
   data.set("string-key", 10);
@@ -99,7 +100,7 @@ Deno.test("Marshal encoder", () => {
   data.set(
     "key-4",
     new Map([
-      [1, 2],
+      [1, 2.5],
       [3, 4],
     ])
   );
@@ -107,9 +108,14 @@ Deno.test("Marshal encoder", () => {
     [Symbol("symbol-key")]: "",
     "key-2": new Date(),
     "😎": "emoji",
+    "key-3": {},
+    "key-4": [],
+    "key-5": new Map(),
+    "key-6": new Set(),
   });
   data.set("key-6", [1, 2, 3, 1, 256]);
   encoded = Marshal.encode(data, { useDynamicNumbers: true, buffer });
+  Marshal.decode(encoded);
 });
 
 class Test {
@@ -166,3 +172,54 @@ Deno.test("Test reference", () => {
 
   assertEquals(decoded.c, decoded.c.circular);
 });
+
+Deno.test("Test unmarshal", () => {
+  const date = new Date();
+  const bigint = BigInt(10);
+
+  let data: any = {
+    a: { value: "Hello, World!" },
+    b: new Test(),
+    c: date,
+    d: bigint,
+  };
+  let decoded = Marshal.decode(...Marshal.encodeWithClasses(data));
+
+  assertEquals(decoded.a.value, "Hello, World!");
+  assertEquals(decoded.b.value, "Hello, World!");
+  assertEquals(decoded.b.method(), "Hello, World!");
+  assertEquals(decoded.c.getTime(), date.getTime());
+  assertEquals(decoded.d, 10n);
+
+  data = new Test()
+  decoded = Marshal.decode(Marshal.encode(data));
+
+  assertEquals(decoded.value, "Hello, World!");
+  assertEquals(decoded.method, undefined);
+
+  data = {};
+  decoded = Marshal.decode(Marshal.encode(data));
+
+  assertEquals(decoded, {});
+  assertNotStrictEquals(decoded, data);
+})
+
+Deno.test("Test UTF-8", () => {
+  const data = "😎🤔🤯🤩🤓"
+
+  const encoded = Marshal.encode(data);
+  const decoded = Marshal.decode(encoded);
+
+  assertEquals(decoded, data);
+})
+
+Deno.test("Test index", () => {
+  const data = {
+    a: { value: "Hello, World!", [index]: "index" },
+  }
+  const encoded = Marshal.encode(data);
+  const a = Marshal.readFromIndex<typeof data.a>(encoded, "index");
+
+  assertEquals(a.value, "Hello, World!");
+  assertNotStrictEquals(a, data.a);
+})

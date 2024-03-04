@@ -16,6 +16,9 @@ export const encodeNumber: Record<
   string,
   (value: number | bigint) => Uint8Array
 > = {
+  i8: (value: number | bigint) => {
+    return new Uint8Array([Number(value)]);
+  },
   u8: (value: number | bigint) => {
     return new Uint8Array([Number(value)]);
   },
@@ -93,7 +96,7 @@ export const encodeNumber: Record<
     if (!memo.u64.has(value)) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
-      view.setBigUint64(0, BigInt(value), true);
+      view.setBigUint64(0, value as bigint, true);
       const encoded = new Uint8Array(buffer);
 
       memo.u64.set(value, encoded);
@@ -121,37 +124,22 @@ export const encodeNumber: Record<
 
 export const decodeNumber: Record<
   string,
-  (buffer: Uint8Array) => number | bigint
+  (data: Uint8Array) => number | bigint
 > = {
-  u8: (buffer: Uint8Array) => {
-    return buffer[0];
-  },
-  i16: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
-    return view.getInt16(0, true);
-  },
-  u16: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
+  u16: (data: Uint8Array) => {
+    const view = new DataView(data.buffer);
     return view.getUint16(0, true);
   },
-  i32: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
-    return view.getInt32(0, true);
-  },
-  u32: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
-    return view.getUint32(0, true);
-  },
-  i64: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
+  i64: (data: Uint8Array) => {
+    const view = new DataView(data.buffer);
     return view.getBigInt64(0, true);
   },
-  u64: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
+  u64: (data: Uint8Array) => {
+    const view = new DataView(data.buffer);
     return view.getBigUint64(0, true);
   },
-  f64: (buffer: Uint8Array) => {
-    const view = new DataView(buffer.buffer);
+  f64: (data: Uint8Array) => {
+    const view = new DataView(data.buffer);
     return view.getFloat64(0, true);
   },
 };

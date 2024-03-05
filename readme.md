@@ -54,7 +54,7 @@ npx jsr add @kasif-apps/marshal
 ### Browser
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/kasif-apps/marshal@v0.0.4-alpha/dist/marshal.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kasif-apps/marshal@v0.3.0-alpha/dist/marshal.js"></script>
 ```
 
 ## Usage

@@ -36,7 +36,7 @@ async function encode() {
 
   try {
     const content = await Deno.readTextFile(input);
-    const encoded = Marshal.encode(JSON.parse(content));
+    const [encoded] = Marshal.encodeWithClasses(JSON.parse(content));
 
     await Deno.writeFile(output, encoded);
   } catch (error) {

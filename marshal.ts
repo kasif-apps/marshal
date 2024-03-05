@@ -72,7 +72,7 @@ let config: BinConfig = {
 const indecies = new Map<string, number>();
 const memo = new Map<string, Uint8Array>();
 // oversized result buffer
-let buffer = new Uint8Array(2 ** 25);
+let buffer = new Uint8Array(2 ** 11); // 2kb
 let constructors: Array<new (...args: unknown[]) => any> = [];
 // This is a map of objects to their offsets in the buffer, helps with circular and other references
 let objects = new WeakMap<object, number>();
@@ -782,7 +782,7 @@ function reset(options?: EncodeOptions) {
 /** Encoding options */
 export type EncodeOptions = {
   /** Provide a custom buffer with a custom size. The default buffer
-   * is sized at 2 ** 25 bytes, giving you roughly 30 mb. If it is
+   * is sized at 2 ** 11 bytes, giving you roughly 2kb. If it is
    * not enough or you want to decrease memory consumption,
    * you can provide a custom buffer.
    */
@@ -820,7 +820,11 @@ export function encode<T>(value: T, options?: EncodeOptions): Marshalled<T> {
 }
 
 /**
- * Encodes a value of any type into a binary buffer and returns the buffer and an array of constructors used in the encoding. You can pass the constructors array to the decoder to get your classes as instances of these constructors. You can encode anything that can be JSON.stringify'd and additionaly symbols, classes, maps, sets, dates, typed arrays and circular references.
+ * Encodes a value of any type into a binary buffer and returns the buffer and an 
+ * array of constructors used in the encoding. You can pass the constructors array 
+ * to the decoder to get your classes as instances of these constructors. You can 
+ * encode anything that can be JSON.stringify'd and additionaly symbols, classes, 
+ * maps, sets, dates, typed arrays and circular references.
  * @example
  * ```ts
  * const [encoded, constructors] = Marshal.encodeWithClasses(data);

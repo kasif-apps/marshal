@@ -1,6 +1,9 @@
 import Marshal from "./mod.ts";
 import data from "./benchmarks/sample.json" with { type: "json" };
 
+// Set buffer to 30MB
+Marshal.encode(null, { buffer: new Uint8Array(2 ** 25) });
+
 Deno.bench("Marshal encoder", { group: "Encoding all" }, () => {
   Marshal.encode(data);
 });
@@ -78,22 +81,44 @@ Deno.bench("Encode/Decode instance", () => {
 });
 
 const typedData = new Set([
-  new Int8Array([-5, -10, -20,-5, -10, -20,-5, -10, -20,-5, -10, -20,-5, -10, -20]), 
-  new Int16Array([-300, -400, -500,-300, -400, -500,-300, -400, -500,-300, -400, -500]), 
-  new Int32Array([-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970]), 
-  new TextEncoder().encode("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi."),
-  new Uint16Array([300, 400, 500,300, 400, 500,300, 400, 500,300, 400, 500,300, 400, 500]), 
-  new Uint32Array([65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740]),
-])
+  new Int8Array([
+    -5, -10, -20, -5, -10, -20, -5, -10, -20, -5, -10, -20, -5, -10, -20,
+  ]),
+  new Int16Array([
+    -300, -400, -500, -300, -400, -500, -300, -400, -500, -300, -400, -500,
+  ]),
+  new Int32Array([
+    -32770, -32870, -32970, -32770, -32870, -32970, -32770, -32870, -32970,
+    -32770, -32870, -32970, -32770, -32870, -32970,
+  ]),
+  new TextEncoder().encode(
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi."
+  ),
+  new Uint16Array([
+    300, 400, 500, 300, 400, 500, 300, 400, 500, 300, 400, 500, 300, 400, 500,
+  ]),
+  new Uint32Array([
+    65540, 65640, 65740, 65540, 65640, 65740, 65540, 65640, 65740, 65540, 65640,
+    65740, 65540, 65640, 65740,
+  ]),
+]);
 
 Deno.bench("Marshal encode typed arrays", () => {
-  Marshal.encode(typedData)
-})
+  Marshal.encode(typedData);
+});
 
-Deno.bench("Marshal clone typed arrays", { group: "Clone typed arrays" }, () => {
-  Marshal.decode(Marshal.encode(typedData));
-})
+Deno.bench(
+  "Marshal clone typed arrays",
+  { group: "Clone typed arrays" },
+  () => {
+    Marshal.decode(Marshal.encode(typedData));
+  }
+);
 
-Deno.bench("Structured clone typed arrays", { group: "Clone typed arrays" }, () => {
-  structuredClone(typedData);
-})
+Deno.bench(
+  "Structured clone typed arrays",
+  { group: "Clone typed arrays" },
+  () => {
+    structuredClone(typedData);
+  }
+);

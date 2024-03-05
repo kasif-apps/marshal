@@ -344,7 +344,7 @@ Deno.test("Test int8 array", () => {
 
   assertInstanceOf(decoded, Int8Array);
   assertEquals(decoded.length, 0);
-})
+});
 
 Deno.test("Test int16 array", () => {
   let data = new Int16Array([-129, -130]);
@@ -362,7 +362,7 @@ Deno.test("Test int16 array", () => {
 
   assertInstanceOf(decoded, Int16Array);
   assertEquals(decoded.length, 0);
-})
+});
 
 Deno.test("Test int32 array", () => {
   let data = new Int32Array([-32769, -32770]);
@@ -380,7 +380,7 @@ Deno.test("Test int32 array", () => {
 
   assertInstanceOf(decoded, Int32Array);
   assertEquals(decoded.length, 0);
-})
+});
 
 Deno.test("Test typed array reference", () => {
   const a = new Uint8Array([1, 2, 3]);
@@ -392,4 +392,4 @@ Deno.test("Test typed array reference", () => {
   assertEquals(decoded.a, decoded.b);
   decoded.a[0] = 10;
   assertEquals(decoded.a, decoded.b);
-})
+});

@@ -11,7 +11,8 @@ in any environment, allowing you to encode JavaScript objects into binary data a
 - Booleans
 - Numbers
 - Arbitrary arrays
-- Arbitrary JavaScript objects
+- Arbitrary objects
+- RegExp
 - Sets
 - Maps
 - Symbols
@@ -21,9 +22,12 @@ in any environment, allowing you to encode JavaScript objects into binary data a
 
 It doesn't yet support:
 
-- Javascript Uint8Array
-- Javascript Uint16Array
-- Javascript Uint32Array
+- Uint8Array
+- Uint16Array
+- Uint32Array
+- ArrayBuffer
+- DataView
+- TypedArray
 
 It can handle circular and non circular references, meaning any bound objects before serialization will be bound after deserialization as well.
 

@@ -34,8 +34,9 @@ export const constants = {
   i32Array: 26,
   symbol: 27,
   class: 28,
-  ref: 29,
-  index: 30,
+  regex: 29,
+  ref: 30,
+  index: 31,
 
   terminator: 0,
 
@@ -68,8 +69,9 @@ export const constants = {
     i32Array: encodeNumber.u8(26),
     symbol: encodeNumber.u8(27),
     class: encodeNumber.u8(28),
-    ref: encodeNumber.u8(29),
-    index: encodeNumber.u8(30),
+    regex: encodeNumber.u8(29),
+    ref: encodeNumber.u8(30),
+    index: encodeNumber.u8(31),
 
     terminator: encodeNumber.u8(0),
   },

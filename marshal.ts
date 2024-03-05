@@ -462,6 +462,34 @@ function marshalClass(value: any): number {
   return n;
 }
 
+export type RegexMap = {
+  flags: string;
+  global: boolean;
+  hasIndices: boolean;
+  ignoreCase: boolean;
+  lastIndex: number;
+  multiline: boolean;
+  source: string;
+  sticky: boolean;
+  unicode: boolean;
+}
+
+function marshalRegex(value: RegExp): number {
+  const map: RegexMap = {
+    flags: value.flags,
+    global: value.global,
+    hasIndices: value.hasIndices,
+    ignoreCase: value.ignoreCase,
+    lastIndex: value.lastIndex,
+    multiline: value.multiline,
+    source: value.source,
+    sticky: value.sticky,
+    unicode: value.unicode,
+  };
+
+  return write(constants.encoded.regex) + marshalRecord(map);
+}
+
 /**
  * Marshals a value of any type into the buffer, returns the number of bytes written.
  */
@@ -510,6 +538,8 @@ function marshalDatum<T>(value: T): number {
         case Uint32Array:
           console.warn("Uint32Array is not supported yet");
           return 0;
+        case RegExp:
+          return marshalRegex(value as unknown as RegExp);
         default:
           return marshalClass(value as Record<string, unknown>);
       }
@@ -565,16 +595,16 @@ function reset(options?: EncodeOptions) {
 
 /** Encoding options */
 export type EncodeOptions = {
-  /** Provide a custom buffer with a custom size. The default buffer 
-   * is sized at 2 ** 25 bytes, giving you roughly 30 mb. If it is 
-   * not enough or you want to decrease memory consumption, 
+  /** Provide a custom buffer with a custom size. The default buffer
+   * is sized at 2 ** 25 bytes, giving you roughly 30 mb. If it is
+   * not enough or you want to decrease memory consumption,
    * you can provide a custom buffer.
    */
   buffer?: Uint8Array;
-  /** Use dynamic numbers instead of all JS float64. 
+  /** Use dynamic numbers instead of all JS float64.
    * This will encode positive numbers less than 256 to u8
    * and negative numbers greater than -128 to i8 and so on...
-   * If you have a lot of untyped numbers and you want 
+   * If you have a lot of untyped numbers and you want
    * to shrink your end result, mark this 'true'. It has a
    * small performance cost when enabled.  */
   useDynamicNumbers?: boolean;

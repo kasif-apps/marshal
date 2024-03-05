@@ -223,3 +223,16 @@ Deno.test("Test index", () => {
   assertEquals(a.value, "Hello, World!");
   assertNotStrictEquals(a, data.a);
 })
+
+Deno.test("Test regex", () => {
+  const data = new RegExp("[a-z]", "g");
+  const encoded = Marshal.encode(data)
+  const decoded = Marshal.decode(encoded)
+  
+  assertNotEquals(decoded.test, undefined)
+  assertEquals(decoded.flags, "g")
+  assertEquals(decoded.source, "[a-z]")
+  assertEquals(decoded.global, true)
+  assertEquals(decoded.test("w"), true)
+  assertEquals(decoded.test("L"), false)
+})

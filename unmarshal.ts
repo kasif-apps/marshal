@@ -2,7 +2,7 @@
  * ummarshal module contains functions for decoding values into binary buffers.
  */
 
-import { Marshalled } from "./marshal.ts";
+import { Marshalled, type RegexMap } from "./marshal.ts";
 import { decodeNumber } from "./numbers.ts";
 import { BinConfig, constants, startOffset } from "./util.ts";
 
@@ -385,6 +385,13 @@ function unmarshalRef(): unknown {
   return objects.get(ref_offset);
 }
 
+function unmarshalRegex(): RegExp {
+  offset++;
+  const map = unmarshalRecord() as RegexMap;
+
+  return new RegExp(map.source, map.flags);
+}
+
 /**
  * Unmarshals an arbitrary datum from the binary
  */
@@ -427,6 +434,8 @@ function unmarshalDatum<T>(): T {
       return unmarshalSymbol() as T;
     case constants.class:
       return unmarshalClass() as T;
+    case constants.regex:
+      return unmarshalRegex() as T;
     case constants.ref:
       return unmarshalRef() as T;
   }

@@ -19,15 +19,19 @@ in any environment, allowing you to encode JavaScript objects into binary data a
 - Dates
 - null & undefined
 - Class instances
+- Uint8Array
+- Int8Array
+- Uint16Array
+- Int16Array
+- Uint32Array
+- Int32Array
 
 It doesn't yet support:
 
-- Uint8Array
-- Uint16Array
-- Uint32Array
+- Float32Array
+- Float64Array
 - ArrayBuffer
 - DataView
-- TypedArray
 
 It can handle circular and non circular references, meaning any bound objects before serialization will be bound after deserialization as well.
 
@@ -36,16 +40,19 @@ It can handle circular and non circular references, meaning any bound objects be
 Use [jsr](https://jsr.io) to install this package.
 
 ### Deno
+
 ```
 deno add @kasif-apps/marshal
 ```
 
 ### Node/Bun
+
 ```
 npx jsr add @kasif-apps/marshal
 ```
 
 ### Browser
+
 ```html
 <script src="https://cdn.jsdelivr.net/gh/kasif-apps/marshal@v0.0.4-alpha/dist/marshal.js"></script>
 ```
@@ -119,11 +126,11 @@ Marshal does not have the best performance when it comes to serializing and dese
 
 Compared to `JSON.stringify`, `Marshal.encode` encodes data 2-4x slower. With small objects with 10-20 keys, encoding take microseconds. At that scale 2-4x slowness seems negligable to me.
 
-Compared to `JSON.parse`, `Marshal.decode` decodes data 3-5x slower. Considering `JSON.parse` already is slower than you might think, marshal library becomes less negligable. 
+Compared to `JSON.parse`, `Marshal.decode` decodes data 3-5x slower. Considering `JSON.parse` already is slower than you might think, marshal library becomes less negligable.
 
 Cloning data at small and large scale is 5-6x slower than both `JSON.parse(JSON.stringify(data))` and `structuredClone(data)`.
 
-So if you need a faster solution that does not require you to include extended JavaScript objects and custom class instances, you should use the builtin `JSON`. If you want to compile your structured data to binary, I can recommend [seqproto](https://github.com/askorama/seqproto) which *can* be faster that `JSON` but less ergonomic to use.
+So if you need a faster solution that does not require you to include extended JavaScript objects and custom class instances, you should use the builtin `JSON`. If you want to compile your structured data to binary, I can recommend [seqproto](https://github.com/askorama/seqproto) which _can_ be faster that `JSON` but less ergonomic to use.
 
 ### Benchmarks
 
@@ -140,52 +147,52 @@ RAM: 16GB
 
 **Encoding the whole file**
 
-| Benchmark | Average Time | Iterations per second | Min | Max | p75 | p99
-|---|---|---|---|---|---|---|
-| `Marshal.encode` | 2.64 ms | 378.3 | 2.24 ms | 3.34 ms | 3.01 ms | 3.31 ms |
-| `JSON.stringify` | 764.69 µs | 1,307.7 | 657.12 µs | 1.45 ms | 783 µs | 1.01 ms |
+| Benchmark        | Average Time | Iterations per second | Min       | Max     | p75     | p99     |
+| ---------------- | ------------ | --------------------- | --------- | ------- | ------- | ------- |
+| `Marshal.encode` | 2.64 ms      | 378.3                 | 2.24 ms   | 3.34 ms | 3.01 ms | 3.31 ms |
+| `JSON.stringify` | 764.69 µs    | 1,307.7               | 657.12 µs | 1.45 ms | 783 µs  | 1.01 ms |
 
-`JSON.stringify` is **3.46x** *faster* than `Marshal.encode`
+`JSON.stringify` is **3.46x** _faster_ than `Marshal.encode`
 
 **Encoding a single entry**
 
-| Benchmark | Average Time | Iterations per second | Min | Max | p75 | p99
-|---|---|---|---|---|---|---|
-| `Marshal.encode` | 5.19 µs | 192,606.4 | 5 µs | 5.44 µs | 5.31 µs | 5.44 µs |
-| `JSON.stringify` | 1.66 µs | 601,689.1 | 1.64 µs | 1.69 ms | 1.67 µs | 1.69 µs |
+| Benchmark        | Average Time | Iterations per second | Min     | Max     | p75     | p99     |
+| ---------------- | ------------ | --------------------- | ------- | ------- | ------- | ------- |
+| `Marshal.encode` | 5.19 µs      | 192,606.4             | 5 µs    | 5.44 µs | 5.31 µs | 5.44 µs |
+| `JSON.stringify` | 1.66 µs      | 601,689.1             | 1.64 µs | 1.69 ms | 1.67 µs | 1.69 µs |
 
-`JSON.stringify` is **3.12x** *faster* than `Marshal.encode`
+`JSON.stringify` is **3.12x** _faster_ than `Marshal.encode`
 
 **Decoding the whole file**
 
-| Benchmark | Average Time | Iterations per second | Min | Max | p75 | p99
-|---|---|---|---|---|---|---|
-| `Marshal.decode` | 14.27 ms | 70.1 | 9.84 ms | 26.12 ms | 16.6 ms | 16.12 ms |
-| `JSON.parse` | 1.17 ms | 854.6 | 1.13 ms | 1.58 ms | 1.39 ms | 1.47 ms |
+| Benchmark        | Average Time | Iterations per second | Min     | Max      | p75     | p99      |
+| ---------------- | ------------ | --------------------- | ------- | -------- | ------- | -------- |
+| `Marshal.decode` | 14.27 ms     | 70.1                  | 9.84 ms | 26.12 ms | 16.6 ms | 16.12 ms |
+| `JSON.parse`     | 1.17 ms      | 854.6                 | 1.13 ms | 1.58 ms  | 1.39 ms | 1.47 ms  |
 
-`JSON.parse` is **12.2x** *faster* than `Marshal.decode`
+`JSON.parse` is **12.2x** _faster_ than `Marshal.decode`
 
 **Cloning a single entry**
 
-| Benchmark | Average Time | Iterations per second | Min | Max | p75 | p99
-|---|---|---|---|---|---|---|
-| `Marshal` | 25.91 µs | 38,589.2 | 9.79 µs | 7.26 ms | 23.67 µs | 69.25 µs |
-| `JSON` | 3.82 µs | 261,793.5 | 3.75 µs | 3.99 µs | 3.84 µs | 3.99 µs |
-| `structuredClone` | 4.39 µs | 228,022.4 | 4.24 µs | 4.46 µs | 4.42 µs | 4.46 µs |
+| Benchmark         | Average Time | Iterations per second | Min     | Max     | p75      | p99      |
+| ----------------- | ------------ | --------------------- | ------- | ------- | -------- | -------- |
+| `Marshal`         | 25.91 µs     | 38,589.2              | 9.79 µs | 7.26 ms | 23.67 µs | 69.25 µs |
+| `JSON`            | 3.82 µs      | 261,793.5             | 3.75 µs | 3.99 µs | 3.84 µs  | 3.99 µs  |
+| `structuredClone` | 4.39 µs      | 228,022.4             | 4.24 µs | 4.46 µs | 4.42 µs  | 4.46 µs  |
 
-`JSON` is **6.78x** *faster* than `Marshal`
-`structuredClone` is **6.47x** *faster* than `Marshal`
+`JSON` is **6.78x** _faster_ than `Marshal`
+`structuredClone` is **6.47x** _faster_ than `Marshal`
 
 **Cloning the whole data**
 
-| Benchmark | Average Time | Iterations per second | Min | Max | p75 | p99
-|---|---|---|---|---|---|---|
-| `Marshal` | 15.5 ms | 64.5 | 12.26 ms | 24.44 ms | 18.22 ms | 24.44 ms |
-| `JSON` | 1.86 ms | 537.5 | 1.76 ms | 2.36 ms | 1.86 ms | 2.14 ms |
-| `structuredClone` | 1.73 ms | 578.6 | 1.64 ms | 1.95 ms | 1.74 ms | 1.92 ms |
+| Benchmark         | Average Time | Iterations per second | Min      | Max      | p75      | p99      |
+| ----------------- | ------------ | --------------------- | -------- | -------- | -------- | -------- |
+| `Marshal`         | 15.5 ms      | 64.5                  | 12.26 ms | 24.44 ms | 18.22 ms | 24.44 ms |
+| `JSON`            | 1.86 ms      | 537.5                 | 1.76 ms  | 2.36 ms  | 1.86 ms  | 2.14 ms  |
+| `structuredClone` | 1.73 ms      | 578.6                 | 1.64 ms  | 1.95 ms  | 1.74 ms  | 1.92 ms  |
 
-`JSON` is **8.30x** *faster* than `Marshal`
-`structuredClone` is **8.97x** *faster* than `Marshal`
+`JSON` is **8.30x** _faster_ than `Marshal`
+`structuredClone` is **8.97x** _faster_ than `Marshal`
 
 ### Final notes
 

@@ -4,6 +4,7 @@
 
 import { encodeNumber } from "./numbers.ts";
 import { Key } from "./unmarshal.ts";
+import { version } from "./util.ts";
 import {
   BinConfig,
   constants,
@@ -29,13 +30,37 @@ const prebuilt = {
   set: new Uint8Array([...constants.encoded.set, ...encodeNumber.u32(0)]),
   string: new Uint8Array([...constants.encoded.string, ...encodeNumber.u32(0)]),
   symbol: new Uint8Array([...constants.encoded.symbol, ...encodeNumber.u32(0)]),
+  u8Array: new Uint8Array([
+    ...constants.encoded.u8Array,
+    ...encodeNumber.u32(0),
+  ]),
+  i8Array: new Uint8Array([
+    ...constants.encoded.i8Array,
+    ...encodeNumber.u32(0),
+  ]),
+  u16Array: new Uint8Array([
+    ...constants.encoded.u16Array,
+    ...encodeNumber.u32(0),
+  ]),
+  i16Array: new Uint8Array([
+    ...constants.encoded.i16Array,
+    ...encodeNumber.u32(0),
+  ]),
+  u32Array: new Uint8Array([
+    ...constants.encoded.u32Array,
+    ...encodeNumber.u32(0),
+  ]),
+  i32Array: new Uint8Array([
+    ...constants.encoded.i32Array,
+    ...encodeNumber.u32(0),
+  ]),
 } as const;
 
 const textEncoder = new TextEncoder();
 
 // A config data is prepended to the binary for diagnostic and future compatibility purposes
 let config: BinConfig = {
-  v: "0.0.1",
+  v: version,
   be: false,
   hs: false,
   hn: false,
@@ -472,7 +497,7 @@ export type RegexMap = {
   source: string;
   sticky: boolean;
   unicode: boolean;
-}
+};
 
 function marshalRegex(value: RegExp): number {
   const map: RegexMap = {
@@ -490,6 +515,156 @@ function marshalRegex(value: RegExp): number {
   return write(constants.encoded.regex) + marshalRecord(map);
 }
 
+function marshalU8Array(value: Uint8Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.u8Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.u8Array);
+  n += write(encodeNumber.u32(value.length));
+  n += write(value);
+
+  return n;
+}
+
+function marshalI8Array(value: Int8Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.i8Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.i8Array);
+  n += write(encodeNumber.u32(value.length));
+
+  const asU8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  buffer.set(asU8, offset);
+  offset += value.byteLength;
+  n += value.byteLength;
+
+  return n;
+}
+
+function marshalU16Array(value: Uint16Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.u16Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.u16Array);
+  n += write(encodeNumber.u32(value.length));
+
+  const asU8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  buffer.set(asU8, offset);
+  offset += value.byteLength;
+  n += value.byteLength;
+
+  return n;
+}
+
+function marshalI16Array(value: Int16Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.i16Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.i16Array);
+  n += write(encodeNumber.u32(value.length));
+
+  const asU8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  buffer.set(asU8, offset);
+  offset += value.byteLength;
+  n += value.byteLength;
+
+  return n;
+}
+
+function marshalU32Array(value: Uint32Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.u32Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.u32Array);
+  n += write(encodeNumber.u32(value.length));
+
+  const asU8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  buffer.set(asU8, offset);
+  offset += value.byteLength;
+  n += value.byteLength;
+
+  return n;
+}
+
+function marshalI32Array(value: Int32Array): number {
+  if (value.length === 0) {
+    return write(prebuilt.i32Array);
+  }
+
+  // If the array is already in the buffer, write a reference to it
+  const foundOffset = objects.get(value);
+  if (foundOffset !== undefined) {
+    return marshalRef(foundOffset);
+  }
+
+  objects.set(value, offset);
+
+  let n = write(constants.encoded.i32Array);
+  n += write(encodeNumber.u32(value.length));
+
+  const asU8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  buffer.set(asU8, offset);
+  offset += value.byteLength;
+  n += value.byteLength;
+
+  return n;
+}
+
+// deno-lint-ignore ban-types
+const unsupported: Function[] = [
+  Function,
+  ArrayBuffer,
+  DataView,
+  Float32Array,
+  Float64Array,
+  Uint8ClampedArray,
+];
+
 /**
  * Marshals a value of any type into the buffer, returns the number of bytes written.
  */
@@ -500,6 +675,11 @@ function marshalDatum<T>(value: T): number {
 
   if (value === null) {
     return write(prebuilt.null);
+  }
+
+  if (unsupported.includes(value.constructor)) {
+    console.warn(`Unsupported type '${value.constructor.name}'`);
+    return 0;
   }
 
   switch (typeof value) {
@@ -513,14 +693,17 @@ function marshalDatum<T>(value: T): number {
       return marshalBoolean(value);
     case "symbol":
       return marshalSymbol(value);
+    case "undefined":
+      return write(prebuilt.undefined);
+    case "function":
+      console.warn(`Unsupported type '${typeof value}'`);
+      return 0;
     case "object":
       if (Array.isArray(value)) {
         return marshalArray(value);
       }
 
       switch (value.constructor) {
-        case Function:
-          return 0;
         case Map:
           return marshalMap(value as unknown as Map<string, unknown>);
         case Set:
@@ -529,22 +712,25 @@ function marshalDatum<T>(value: T): number {
           return marshalDate(value as unknown as Date);
         case Object:
           return marshalRecord(value as Record<string, unknown>);
-        case Uint8Array:
-          console.warn("Uint8Array is not supported yet");
-          return 0;
-        case Uint16Array:
-          console.warn("Uint16Array is not supported yet");
-          return 0;
-        case Uint32Array:
-          console.warn("Uint32Array is not supported yet");
-          return 0;
         case RegExp:
           return marshalRegex(value as unknown as RegExp);
+        case Uint8Array:
+          return marshalU8Array(value as unknown as Uint8Array);
+        case Int8Array:
+          return marshalI8Array(value as unknown as Int8Array);
+        case Uint16Array:
+          return marshalU16Array(value as unknown as Uint16Array);
+        case Int16Array:
+          return marshalI16Array(value as unknown as Int16Array);
+        case Uint32Array:
+          return marshalU32Array(value as unknown as Uint32Array);
+        case Int32Array:
+          return marshalI32Array(value as unknown as Int32Array);
         default:
           return marshalClass(value as Record<string, unknown>);
       }
     default:
-      throw new Error(`Cannot marshal value: '${typeof value}'`);
+      throw new Error(`Unknown type: '${typeof value}'`);
   }
 }
 
@@ -575,7 +761,7 @@ function marshalIndecies(): number {
 function reset(options?: EncodeOptions) {
   offset = startOffset;
   config = {
-    v: config.v,
+    v: version,
     be: false,
     re: false,
     hs: false,

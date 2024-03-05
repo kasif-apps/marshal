@@ -76,3 +76,24 @@ const user = new User("John Doe", 30);
 Deno.bench("Encode/Decode instance", () => {
   Marshal.decode(...Marshal.encodeWithClasses(user));
 });
+
+const typedData = new Set([
+  new Int8Array([-5, -10, -20,-5, -10, -20,-5, -10, -20,-5, -10, -20,-5, -10, -20]), 
+  new Int16Array([-300, -400, -500,-300, -400, -500,-300, -400, -500,-300, -400, -500]), 
+  new Int32Array([-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970,-32770, -32870, -32970]), 
+  new TextEncoder().encode("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi."),
+  new Uint16Array([300, 400, 500,300, 400, 500,300, 400, 500,300, 400, 500,300, 400, 500]), 
+  new Uint32Array([65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740,65540, 65640, 65740]),
+])
+
+Deno.bench("Marshal encode typed arrays", () => {
+  Marshal.encode(typedData)
+})
+
+Deno.bench("Marshal clone typed arrays", { group: "Clone typed arrays" }, () => {
+  Marshal.decode(Marshal.encode(typedData));
+})
+
+Deno.bench("Structured clone typed arrays", { group: "Clone typed arrays" }, () => {
+  structuredClone(typedData);
+})

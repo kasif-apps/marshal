@@ -4,6 +4,7 @@
 
 import { Marshalled, type RegexMap } from "./marshal.ts";
 import { decodeNumber } from "./numbers.ts";
+import { version } from "./util.ts";
 import { BinConfig, constants, startOffset } from "./util.ts";
 
 // objects map is to keep track of references in the binary
@@ -159,16 +160,21 @@ function unmarshalBigint(): bigint {
  * Unmarshals a date from the binary
  */
 function unmarshalDate(): Date {
+  const dateOffset = offset - 1;
   const content = decodeNumber.u64(peek(8)) as bigint;
   offset += 8;
 
-  return new Date(Number(content));
+  const date = new Date(Number(content));
+  objects.set(dateOffset, date);
+
+  return date;
 }
 
 /**
  * Unmarshals an array from the binary
  */
 function unmarshalArray<T>(): T[] {
+  const arrayOffset = offset - 1;
   const length = decodeSize();
   offset += 4;
 
@@ -182,6 +188,8 @@ function unmarshalArray<T>(): T[] {
     content[i] = unmarshalDatum();
   }
 
+  objects.set(arrayOffset, content);
+
   return content;
 }
 
@@ -189,6 +197,7 @@ function unmarshalArray<T>(): T[] {
  * Unmarshals a set from the binary
  */
 function unmarshalSet<T>(): Set<T> {
+  const setOffset = offset - 1;
   const length = decodeSize();
   offset += 4;
 
@@ -201,6 +210,8 @@ function unmarshalSet<T>(): Set<T> {
   for (let i = 0; i < length; i++) {
     content.add(unmarshalDatum());
   }
+
+  objects.set(setOffset, content);
 
   return content;
 }
@@ -386,10 +397,120 @@ function unmarshalRef(): unknown {
 }
 
 function unmarshalRegex(): RegExp {
+  const regexOffset = offset - 1;
   offset++;
   const map = unmarshalRecord() as RegexMap;
 
-  return new RegExp(map.source, map.flags);
+  const result = new RegExp(map.source, map.flags);
+  objects.set(regexOffset, result);
+
+  return result;
+}
+
+function unmarshalU8Array(): Uint8Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Uint8Array(0);
+  }
+
+  const result = input!.slice(offset, offset + length);
+  offset += length;
+  objects.set(arrayOffset, result);
+
+  return result;
+}
+
+function unmarshalI8Array(): Int8Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Int8Array(0);
+  }
+
+  const asU8 = input!.subarray(offset, offset + length);
+  const content = new Int8Array(asU8.buffer, asU8.byteOffset, length);
+
+  offset += length;
+  objects.set(arrayOffset, content);
+
+  return content;
+}
+
+function unmarshalU16Array(): Uint16Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Uint16Array(0);
+  }
+
+  const asU8 = input!.slice(offset, offset + length * 2);
+  const content = new Uint16Array(asU8.buffer, asU8.byteOffset, length);
+
+  offset += length * 2;
+  objects.set(arrayOffset, content);
+
+  return content;
+}
+
+function unmarshalI16Array(): Int16Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Int16Array(0);
+  }
+
+  const asU8 = input!.slice(offset, offset + length * 2);
+  const content = new Int16Array(asU8.buffer, asU8.byteOffset, length);
+
+  offset += length * 2;
+  objects.set(arrayOffset, content);
+
+  return content;
+}
+
+function unmarshalU32Array(): Uint32Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Uint32Array(0);
+  }
+
+  const asU8 = input!.slice(offset, offset + length * 4);
+  const content = new Uint32Array(asU8.buffer, asU8.byteOffset, length);
+
+  offset += length * 4;
+  objects.set(arrayOffset, content);
+
+  return content;
+}
+
+function unmarshalI32Array(): Int32Array {
+  const arrayOffset = offset - 1;
+  const length = decodeSize();
+  offset += 4;
+
+  if (length === 0) {
+    return new Int32Array(0);
+  }
+
+  const asU8 = input!.slice(offset, offset + length * 4);
+  const content = new Int32Array(asU8.buffer, asU8.byteOffset, length);
+
+  offset += length * 4;
+  objects.set(arrayOffset, content);
+
+  return content;
 }
 
 /**
@@ -436,6 +557,18 @@ function unmarshalDatum<T>(): T {
       return unmarshalClass() as T;
     case constants.regex:
       return unmarshalRegex() as T;
+    case constants.u8array:
+      return unmarshalU8Array() as T;
+    case constants.i8array:
+      return unmarshalI8Array() as T;
+    case constants.u16Array:
+      return unmarshalU16Array() as T;
+    case constants.i16Array:
+      return unmarshalI16Array() as T;
+    case constants.u32Array:
+      return unmarshalU32Array() as T;
+    case constants.i32Array:
+      return unmarshalI32Array() as T;
     case constants.ref:
       return unmarshalRef() as T;
   }
@@ -478,6 +611,13 @@ export function decode<T>(
   objects.clear();
   input = value as Uint8Array;
   config = unmarshalConfig();
+
+  if (config.v !== version) {
+    console.warn(
+      `The encoded value is not compatible with this version of marshal. The archive is encoded with @kasif-apps/marshal@v${config.v} and you are using @kasif-apps/marshal@v${version}. Some features may not work as expected.`
+    );
+  }
+
   offset = startOffset;
   constructors = classes;
   const unmarshalled = unmarshalDatum<T>();
